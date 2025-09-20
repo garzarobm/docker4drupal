@@ -9,9 +9,9 @@ services:
       MYSQL_USER: $DB_USER
       MYSQL_PASSWORD: $DB_PASSWORD
       MYSQL_TRANSACTION_ISOLATION: READ-COMMITTED
-#    volumes:
-#      - ./mariadb-init:/docker-entrypoint-initdb.d # Place init .sql file(s) here.
-#      - /path/to/mariadb/data/on/host:/var/lib/mysql # Use bind mount
+    volumes:
+      - ./mariadb/mariadb-init:/docker-entrypoint-initdb.d # Place init .sql file(s) here.
+      - ./mariadb:/var/lib/mysql # Use bind mount
 
   php:
     image: wodby/drupal-php:$PHP_TAG
@@ -23,38 +23,38 @@ services:
       # Mailpit:
       MSMTP_HOST: mailpit
       MSMTP_PORT: 1025
-#      # OpenSMTPD:
-#      MSMTP_HOST: opensmtpd
-#      MSMTP_PORT: 25
-#      DB_HOST: $DB_HOST
-#      DB_PORT: $DB_PORT
-#      DB_USER: $DB_USER
-#      DB_PASSWORD: $DB_PASSWORD
-#      DB_NAME: $DB_NAME
-#      DB_DRIVER: $DB_DRIVER
-#      DRUSH_OPTIONS_URI: "http://${PROJECT_BASE_URL}:${PROJECT_PORT}"
-#      PHP_FPM_USER: wodby
-#      PHP_FPM_GROUP: wodby
-#      COLUMNS: 80 # Set 80 columns for docker exec -it.
-#      # Read instructions at https://wodby.com/docs/stacks/php/local/#xdebug
-#      PHP_XDEBUG_MODE: debug
-#      PHP_XDEBUG_MODE: profile
-#      PHP_XDEBUG_USE_COMPRESSION: false
-#      PHP_IDE_CONFIG: serverName=my-ide
-#      PHP_XDEBUG_IDEKEY: "my-ide"
-#      PHP_XDEBUG_LOG: /tmp/php-xdebug.log
-#      # PHPUnit Drupal testing configurations
-#      SIMPLETEST_BASE_URL: "http://nginx"
-#      SIMPLETEST_DB: "${DB_DRIVER}://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}#tests_"
-#      MINK_DRIVER_ARGS_WEBDRIVER: '["chrome", {"browserName":"chrome","goog:chromeOptions":{"args":["--disable-gpu","--headless"]}}, "http://chrome:9515"]'
+      # OpenSMTPD:
+      # MSMTP_HOST: opensmtpd
+      # MSMTP_PORT: 25
+      DB_HOST: $DB_HOST
+      DB_PORT: $DB_PORT
+      DB_USER: $DB_USER
+      DB_PASSWORD: $DB_PASSWORD
+      DB_NAME: $DB_NAME
+      DB_DRIVER: $DB_DRIVER
+      DRUSH_OPTIONS_URI: "http://${PROJECT_BASE_URL}:${PROJECT_PORT}"
+      PHP_FPM_USER: wodby
+      PHP_FPM_GROUP: wodby
+      COLUMNS: 80 # Set 80 columns for docker exec -it.
+      # Read instructions at https://wodby.com/docs/stacks/php/local/#xdebug
+      PHP_XDEBUG_MODE: debug
+      # PHP_XDEBUG_MODE: profile
+      PHP_XDEBUG_USE_COMPRESSION: false
+      PHP_IDE_CONFIG: serverName=my-ide
+      PHP_XDEBUG_IDEKEY: "my-ide"
+      PHP_XDEBUG_LOG: /tmp/php-xdebug.log
+      # PHPUnit Drupal testing configurations
+      SIMPLETEST_BASE_URL: "http://nginx"
+      SIMPLETEST_DB: "${DB_DRIVER}://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}#tests_"
+      MINK_DRIVER_ARGS_WEBDRIVER: '["chrome", {"browserName":"chrome","goog:chromeOptions":{"args":["--disable-gpu","--headless"]}}, "http://chrome:9515"]'
     extra_hosts:
-    - "host.docker.internal:host-gateway"
+      - "host.docker.internal:host-gateway"
     volumes:
-    - ./:/var/www/html:cached
-## Alternative for macOS users: Mutagen https://wodby.com/docs/stacks/drupal/local#docker-for-mac
-#    - drupal:/var/www/html
-## For XHProf and Xdebug profiler traces
-#    - files:/mnt/files
+      - ./:/var/www/html:cached
+    # Alternative for macOS users: Mutagen https://wodby.com/docs/stacks/drupal/local#docker-for-mac
+      - ./drupal:/var/www/html:rw
+      # For XHProf and Xdebug profiler traces
+      - ./files:/mnt/files
 
   crond:
     init: true
@@ -65,8 +65,8 @@ services:
     command: sudo -E crond -f -d 0
     volumes:
     - ./:/var/www/html:cached
-## Alternative for macOS users: Mutagen https://wodby.com/docs/stacks/drupal/local#docker-for-mac
-#    - drupal:/var/www/html
+    ## Alternative for macOS users: Mutagen https://wodby.com/docs/stacks/drupal/local#docker-for-mac
+    - ./drupal:/var/www/html
 
   nginx:
     image: wodby/nginx:$NGINX_TAG
@@ -79,13 +79,13 @@ services:
       NGINX_BACKEND_HOST: php
       NGINX_SERVER_ROOT: /var/www/html/web
       NGINX_VHOST_PRESET: $NGINX_VHOST_PRESET
-    #      NGINX_DRUPAL_FILE_PROXY_URL: http://example.com
+      NGINX_DRUPAL_FILE_PROXY_URL: http://localhost:8000
     volumes:
     - ./:/var/www/html:cached
-## Alternative for macOS users: Mutagen https://wodby.com/docs/stacks/drupal/local#docker-for-mac
-#    - drupal:/var/www/html
+    ## Alternative for macOS users: Mutagen https://wodby.com/docs/stacks/drupal/local#docker-for-mac
+    - ./drupal:/var/www/html
     labels:
-    - "traefik.http.routers.${PROJECT_NAME}_nginx.rule=Host(`${PROJECT_BASE_URL}`)"
+      - "traefik.http.routers.${PROJECT_NAME}_nginx.rule=Host(`${PROJECT_BASE_URL}`)"
 
   mailpit:
     image: axllent/mailpit
@@ -156,16 +156,16 @@ services:
 #    labels:
 #    - "traefik.http.routers.${PROJECT_NAME}_adminer.rule=Host(`adminer.${PROJECT_BASE_URL}`)"
 
-#  pma:
-#    image: phpmyadmin/phpmyadmin
-#    container_name: "${PROJECT_NAME}_pma"
-#    environment:
-#      PMA_HOST: $DB_HOST
-#      PMA_USER: $DB_USER
-#      PMA_PASSWORD: $DB_PASSWORD
-#      UPLOAD_LIMIT: 1G
-#    labels:
-#    - "traefik.http.routers.${PROJECT_NAME}_pma.rule=Host(`pma.${PROJECT_BASE_URL}`)"
+  pma:
+    image: phpmyadmin/phpmyadmin
+    container_name: "${PROJECT_NAME}_pma"
+    environment:
+      PMA_HOST: $DB_HOST
+      PMA_USER: $DB_USER
+      PMA_PASSWORD: $DB_PASSWORD
+      UPLOAD_LIMIT: 1G
+    labels:
+    - "traefik.http.routers.${PROJECT_NAME}_pma.rule=Host(`pma.${PROJECT_BASE_URL}`)"
 
 #  solr:
 #    image: wodby/solr:$SOLR_TAG
@@ -201,18 +201,18 @@ services:
 #    image: gotenberg/gotenberg
 #    container_name: "${PROJECT_NAME}_gotenberg"
 
-#  node:
-#    image: wodby/node:$NODE_TAG
-#    container_name: "${PROJECT_NAME}_node"
-#    working_dir: /var/www/html/path/to/theme/to/build
-#    labels:
-#    - "traefik.http.services.${PROJECT_NAME}_node.loadbalancer.server.port=3000"
-#    - "traefik.http.routers.${PROJECT_NAME}_node.rule=Host(`node.${PROJECT_BASE_URL}`)"
-#    expose:
-#    - "3000"
-#    volumes:
-#    - ./:/var/www/html
-#    command: sh -c 'yarn install && yarn run start'
+  # node:
+  #   image: wodby/node:$NODE_TAG
+  #   container_name: "${PROJECT_NAME}_node"
+  #   working_dir: ./build
+  #   labels:
+  #   - "traefik.http.services.${PROJECT_NAME}_node.loadbalancer.server.port=3000"
+  #   - "traefik.http.routers.${PROJECT_NAME}_node.rule=Host(`node.${PROJECT_BASE_URL}`)"
+  #   expose:
+  #   - "3000"
+  #   volumes:
+  #   - ./:/var/www/html
+  #   command: sh -c 'yarn install && yarn run start'
 
 #  webgrind:
 #    image: wodby/webgrind:$WEBGRIND_TAG
@@ -256,18 +256,18 @@ services:
 #    labels:
 #    - "traefik.http.routers.${PROJECT_NAME}_xhprof.rule=Host(`xhprof.${PROJECT_BASE_URL}`)"
 
-#  chrome:
-#    image: selenium/standalone-chrome:$SELENIUM_CHROME_TAG
-#    container_name: "${PROJECT_NAME}_chrome"
-#    volumes:
-#    - /dev/shm:/dev/shm
-#    entrypoint:
-#    - chromedriver
-#    - "--no-sandbox"
-#    - "--disable-dev-shm-usage"
-#    - "--log-path=/tmp/chromedriver.log"
-#    - "--verbose"
-#    - "--whitelisted-ips="
+  chrome:
+    image: selenium/standalone-chrome:$SELENIUM_CHROME_TAG
+    container_name: "${PROJECT_NAME}_chrome"
+    volumes:
+    - /dev/shm:/dev/shm
+    entrypoint:
+    - chromedriver
+    - "--no-sandbox"
+    - "--disable-dev-shm-usage"
+    - "--log-path=/tmp/chromedriver.log"
+    - "--verbose"
+    - "--whitelisted-ips="
 
   traefik:
     image: traefik:v2.0
@@ -275,31 +275,39 @@ services:
     command: --api.insecure=true --providers.docker
     ports:
     - "${PROJECT_PORT}:80"
-#    - '8080:8080' # Dashboard
+    - '8080:8080' # Dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
-#x-mutagen:
-#  sync:
-#    defaults:
-#      ignore:
-#        vcs: true
-#        paths:
-#        - .DS_Store
-#        - .history
-#        - .idea
-#    drupal:
-#      alpha: "."
-#      beta: "volume://drupal"
-#      configurationBeta:
-#        permissions:
-#          defaultFileMode: 0644
-#          defaultDirectoryMode: 0755
-#          defaultOwner: "id:501"
-#          defaultGroup: "id:20"
+
+
+
+    # Alternative for macOS users: Mutagen https://wodby.com/docs/stacks/drupal/local#docker-for-mac
+  #   sync:
+  #     defaults:
+  #       ignore:
+  #         vcs: true
+  #         paths:
+  #         - .DS_Store
+  #         - .history
+  #         - .idea
+  # drupal:
+  #   alpha: "."
+  #   beta: "volume://drupal"
+  #   configurationBeta:
+  #     permissions:
+  #       defaultFileMode: 0644
+  #       defaultDirectoryMode: 0755
+  #       defaultOwner: "id:501"
+  #       defaultGroup: "id:20"
 
 volumes:
 ## For macOS users (Mutagen)
-#  drupal:
+  # drupal:
 # For Xdebug profiler
-  files:
+  # files:
+  mariadb:
+#  postgres:
+#  solr:
+#  xhprof:
+

@@ -62,6 +62,9 @@ drush en -y search_api_solr_admin
 chmod 755 "${PWD}/sites/default/settings.php"
 echo "include '${PWD}/sites/default/test.settings.php';" >>"${PWD}/sites/default/settings.php"
 
+# Now that Redis module is enabled, add Redis cache backend configuration
+echo "include '${PWD}/sites/default/redis.settings.php';" >>"${PWD}/sites/default/settings.php"
+
 ## Enable redis
 check_rq "Redis" "Connected"
 
